@@ -1,0 +1,70 @@
+version: "3"
+
+services:
+  moodle-cursos:
+    image: moodle
+    ports:
+      - 80:80
+    networks:
+      - frontend
+      - backend
+    depends_on:
+      - db
+    volumes:
+      - moodledata:/var/moodledata
+#    command: nop
+    environment:  
+      - MOODLE_URL=http://glud.udistrital.edu.co
+      - DB_TYPE=pgsql
+      - DB_TCP_ADDR=db
+      - DB_ENV_DATABASE=moodle
+      - DB_ENV_USER=moodle
+      - DB_ENV_PASSWORD=8ETmnyQLmfnCkKNP1AHWuxbAs
+    deploy:
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+#  db:
+#    image: mariadb
+#    networks:
+#      - glud-db
+#    ports:
+#      - 3306:3306
+#    volumes:
+#      - dbdata:/var/lib/mysql
+#    environment:
+#      - MYSQL_ROOT_PASSWORD=8ETmnyQLmfnCkKNP1AHWuxbAs
+#     - MYSQL_USER=moodle
+#      - MYSQL_PASSWORD=moodle8ETmnyQLmfnCk
+#      - MYSQL_DATABASE=moodle
+#    deploy:
+#      restart_policy:
+#        condition: on-failure
+#        delay: 5s
+  db:
+    image: postgres
+    networks:
+      - backend
+    ports:
+      - 5432:5432
+    volumes:
+      - dbdata:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_PASSWORD=8ETmnyQLmfnCkKNP1AHWuxbAs
+      - POSTGRES_USER=moodle
+      - POSTGRES_DB=moodle
+  adminer:
+    image: adminer
+    ports:
+      - 443:80
+    networks:
+      - backend
+    depends_on:
+      - db
+
+networks:
+  backend:
+  frontend:
+volumes:
+  dbdata:
+  moodledata:
