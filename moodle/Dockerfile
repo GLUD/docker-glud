@@ -1,5 +1,5 @@
 FROM webdevops/php-nginx:alpine-php5
-MAINTAINER Sebastian Tabares Amaya <sytabaresa@gmail.com>
+LABEL maintainer "Sebastian Tabares Amaya <sytabaresa@gmail.com>"
 
 ENV VERSION 33
 
