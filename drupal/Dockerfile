@@ -1,7 +1,7 @@
 FROM drupal:latest
 LABEL mantainer "Sebastian Tabares Amaya <sytabaresa@gmail.com>"
 
-RUN pecl install oauth &&  docker-php-ext-enable oauth
+RUN pecl install oauth uploadprogress &&  docker-php-ext-enable oauth uploadprogress
 
 ENV COMPOSER_VERSION 1.4.2
 RUN curl -s -f -L -o /tmp/installer.php https://raw.githubusercontent.com/composer/getcomposer.org/da290238de6d63faace0343efbdd5aa9354332c5/web/installer \
