@@ -3,11 +3,12 @@ version: "3.1"
 services:
   moodle-cursos:
     image: glud/moodle:latest
-    ports:
-      - 80:80
+    #ports:
+    #  - 80:80
     networks:
       - frontend
       - backend
+      - reverse_proxy
     depends_on:
       - db
     volumes:
@@ -15,32 +16,37 @@ services:
     secrets:
       - db_password
     environment:  
-      - MOODLE_URL=http://glud.udistrital.edu.co
+      - MOODLE_URL=https://cursos.glud.org
       - DB_TYPE=pgsql #or mariadb
       - DB_TCP_ADDR=db
       - DB_ENV_DATABASE=moodle
       - DB_ENV_USER=moodle
       - DB_ENV_PASSWORD_FILE=/run/secrets/db_password
+      - SSL_ENABLED=true
+      # For reverse proxy
+      - VIRTUAL_HOST=cursos.glud.org 
+      - LETSENCRYPT_HOST=cursos.glud.org
+      - LETSENCRYPT_EMAIL=sytabaresa@gmail.com
     deploy:
-      replicas: 2
+      replicas: 1
       restart_policy:
         condition: on-failure
         delay: 5s
+
 ## MariaDB configuration:
 #  db:
 #    image: mariadb
 #    networks:
-#      - glud-db
-#    ports:
-#      - 3306:3306
+#      - backend
+#    #ports:
+#    #  - 3306:3306
 #    volumes:
 #      - dbdata:/var/lib/mysql
 #    secrets:
 #      - db_password
-#      - db_root_password
 #    environment:
-#      - MYSQL_ROOT_PASSWORD_FILE=/run/secrets/db_root_password
-#     - MYSQL_USER=moodle
+#      - MYSQL_ROOT_PASSWORD_FILE=/run/secrets/db_password
+#      - MYSQL_USER=moodle
 #      - MYSQL_PASSWORD_FILE=/run/secrets/db_password
 #      - MYSQL_DATABASE=moodle
 #    deploy:
@@ -54,8 +60,8 @@ services:
     image: postgres
     networks:
       - backend
-    ports:
-      - 5432:5432
+    #ports:
+    #  - 5432:5432
     volumes:
       - dbdata:/var/lib/postgresql/data
     secrets:
@@ -70,18 +76,20 @@ services:
         condition: on-failure
         delay: 5s
 
-  adminer:
-    image: adminer
-    ports:
-      - 8080:80
-    networks:
-      - backend
-    depends_on:
-      - db
+#  adminer:
+#    image: adminer
+#    #ports:
+#    #  - 8080:80
+#    networks:
+#      - backend
+#    depends_on:
+#      - db
 
 networks:
   backend:
   frontend:
+  reverse_proxy:
+    external: true
 
 volumes:
   dbdata:
@@ -90,5 +98,3 @@ volumes:
 secrets:
   db_password:
     file: ./db_password.priv
-  db_root_password:
-    file: ./db_root_password.priv

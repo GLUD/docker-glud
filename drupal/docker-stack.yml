@@ -3,27 +3,25 @@ version: "3.1"
 services:
   drupal:
     image: glud/drupal:latest
-#    ports:
-#      - 443:80
+    #ports:
+    #  - 80:80
     volumes:
       - modules:/var/www/html/modules
       - profiles:/var/www/html/profiles
       - themes:/var/www/html/themes
       - keys:/var/run/keys
-      # this takes advantage of the feature in Docker that a new anonymous
-      # volume (which is what we're creating here) will be initialized with the
-      # existing content of the image at the same location
       - sites:/var/www/html/sites
     environment:
-      - VIRTUAL_HOST=drupal.nsupdate.info
-      - LETSENCRYPT_HOST=drupal.nsupdate.info
+      - VIRTUAL_HOST=glud.udistrital.edu.co
+      - LETSENCRYPT_HOST=glud.udistrital.edu.co
       - LETSENCRYPT_EMAIL=sytabaresa@gmail.com
-
     networks:
       - backend
       - reverse_proxy
+    depends_on:
+      - db
 
-  postgres:
+  db:
     image: postgres:latest
     environment:
       - POSTGRES_PASSWORD_FILE=/run/secrets/db_password
@@ -51,5 +49,5 @@ networks:
 
 secrets:
   db_password:
-    file: db_password.priv
+    file: ./db_password.priv
 

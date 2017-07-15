@@ -1,0 +1,71 @@
+version: '3.1'
+
+services:
+  db:
+    image: postgres
+    environment:
+      POSTGRES_USER: taiga
+      POSTGRES_DB: taiga
+      POSTGRES_PASSWORD: 1XqRXIwjvVDpz47oOIIHSkRMoHXX6YQ6CqN6aPJl
+    volumes:
+      - dbdata:/var/lib/postgresql/data
+    networks:
+      - backend
+
+  taigaback:
+    image: glud/taiga-back
+    hostname: taigaback.glud.org
+    environment:
+      SECRET_KEY: d6VzPqWiCq9z7oWuMDpcg73b1Y0HaUgMldzJ5tT9
+      EMAIL_USE_TLS: 'True'
+      EMAIL_HOST: smtp.gmail.com
+      EMAIL_PORT: 587
+      EMAIL_HOST_USER: sytabaresa@gmail.com
+      EMAIL_HOST_PASSWORD: abdanzeuvgpqibsm
+      POSTGRES_USER: taiga
+      POSTGRES_HOST: db
+      POSTGRES_DB_NAME: taiga
+      POSTGRES_PASSWORD: 1XqRXIwjvVDpz47oOIIHSkRMoHXX6YQ6CqN6aPJl
+      POSTGRES_PORT: 5432
+      API_SCHEME: https
+      FRONT_SCHEME: https
+      ## For reverse proxy
+      VIRTUAL_HOST: taigaback.glud.org
+    volumes:
+      - media:/usr/local/taiga/media     
+      - static:/usr/local/taiga/static
+      - logs:/usr/local/taiga/logs
+    networks:
+      - backend
+      - frontend
+      - reverse_proxy
+   
+  taigafront:
+    image: glud/taiga-front-dist
+    hostname: taiga.glud.org
+    volumes:
+      - media:/usr/local/taiga/media   
+      - static:/usr/local/taiga/static
+      - logs:/usr/local/taiga/logs
+    environment:
+      TAIGABACK_PORT_8000_TCP_ADDR: taigaback
+      TAIGA_LANG: es
+      SCHEME: https
+      
+      ## For reverse proxy
+      VIRTUAL_HOST: taiga.glud.org,taiga.nsupdate.info
+    networks:
+      - frontend
+      - reverse_proxy
+
+networks:
+  backend:
+  frontend:
+  reverse_proxy:
+    external: true
+   
+volumes:
+  media:
+  dbdata:
+  static:
+  logs:

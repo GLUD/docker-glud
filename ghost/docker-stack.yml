@@ -1,0 +1,60 @@
+version: '3.1'
+
+services:
+  webpage:
+    image: ghost:alpine
+    #command: npm --production start
+    networks:
+      - backend
+      - reverse_proxy
+    depends_on:
+      - db
+    volumes:
+      - data:/var/lib/ghost
+      - ./config.js:/var/lib/ghost/config.js
+    environment:
+      VIRTUAL_HOST: blog.glud.org
+      LETSENCRYPT_HOST: blog.glud.org
+      LETSENCRYPT_EMAIL: sytabaresa@gmail.com
+    secrets:
+      - db_password
+    deploy:
+      restart_policy:
+        condition: any
+  db:
+    image: mariadb
+    networks:
+      - backend
+    volumes:
+      - dbdata:/var/lib/mysql
+    environment:
+      - MYSQL_ROOT_PASSWORD_FILE=/run/secrets/db_password
+      - MYSQL_DATABASE=ghost
+    secrets:
+      - db_password
+
+#  phpmyadmin:
+#    image: phpmyadmin/phpmyadmin
+#    #ports:
+#    #  - 8080:80
+#    networks:
+#      - backend
+#    depends_on:
+#      - db
+#    environment:
+#      - PMA_USER:root
+#      - PMA_HOST:db
+#      - PMA_PASSWORD_FILE:/run/secrets/db_password
+
+networks:
+  backend:
+  reverse_proxy:
+    external: true
+ 
+volumes:
+  dbdata:
+  data:
+
+secrets:
+  db_password:
+    file: ./db_password.priv

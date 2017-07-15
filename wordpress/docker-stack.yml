@@ -1,0 +1,46 @@
+version: '3.1'
+
+services:
+  wordpress:
+    image: wordpress:latest
+    #ports:
+    #  - 8080:80
+    volumes:
+      - data:/var/www//html
+    environment:
+      WORDPRESS_DB_HOST: db
+      WORDPRESS_DB_NAME: wordpress
+      WORDPRESS_DB_PASSWORD_FILE: /run/secrets/db_password
+      ## reverse proxy
+      VIRTUAL_HOST: wordpress.glud.org
+    networks:
+      - backend
+      - reverse_proxy
+    secrets:
+      - db_password
+
+  db:
+    image: mariadb
+    volumes:
+      - dbdata:/var/lib/mysql
+    environment:
+      MYSQL_DATABASE: wordpress
+      MYSQL_ROOT_PASSWORD_FILE: /run/secrets/db_password
+    networks:
+      - backend
+    secrets:
+      - db_password
+
+networks:
+  backend:
+  reverse_proxy:
+    external: true
+
+volumes:
+  dbdata:
+  data: 
+
+secrets:
+  db_password:
+    file: ./db_password.priv
+

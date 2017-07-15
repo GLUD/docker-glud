@@ -1,0 +1,85 @@
+version: '3.1'
+
+services:
+  db:
+    image: postgres
+    environment:
+      POSTGRES_USER: taiga
+      POSTGRES_DB: taiga
+      POSTGRES_PASSWORD_FILE: /run/secrets/db_password
+    volumes:
+      - dbdata:/var/lib/postgresql/data
+    networks:
+      - backend
+    secrets:
+      - db_password
+
+  taigaback:
+    image: glud/taiga-back:latest
+    hostname: taigaback.glud.org
+    environment:
+      SECRET_KEY_FILE: /run/secrets/secret_key
+      EMAIL_USE_TLS: 'True'
+      EMAIL_HOST: smtp.mailgun.org
+      EMAIL_PORT: 587
+      EMAIL_HOST_USER: taiga@glud.org
+      EMAIL_HOST_PASSWORD_FILE: /run/secrets/email_password
+      POSTGRES_USER: taiga
+      POSTGRES_HOST: db
+      POSTGRES_DB_NAME: taiga
+      POSTGRES_PORT: 5432
+      POSTGRES_PASSWORD_FILE: /run/secrets/db_password
+      ## For reverse proxy
+      VIRTUAL_HOST: taigaback.glud.org
+      LETSENCRYPT_HOST: taigaback.glud.org
+      LETSENCRYPT_EMAIL: sytabaresa@gmail.com
+    volumes:
+      - media:/usr/local/taiga/media     
+      - static:/usr/local/taiga/static
+      - logs:/usr/local/taiga/logs
+    networks:
+      - backend
+      - frontend
+      - reverse_proxy
+    secrets:
+      - db_password 
+      - email_password
+      - secret_key
+
+  taigafront:
+    image: glud/taiga-front:latest
+    hostname: taiga.glud.org
+    volumes:
+      - media:/usr/local/taiga/media   
+      - static:/usr/local/taiga/static
+      - logs:/usr/local/taiga/logs
+    environment:
+      TAIGABACK_PORT_8000_TCP_ADDR: taigaback
+      TAIGA_LANG: es
+      ## For reverse proxy
+      VIRTUAL_HOST: taiga.glud.org,taiga.nsupdate.info
+      LETSENCRYPT_HOST: taiga.glud.org
+      LETSENCRYPT_EMAIL: sytabaresa@gmail.com
+    networks:
+      - frontend
+      - reverse_proxy
+
+networks:
+  backend:
+  frontend:
+  reverse_proxy:
+    external: true
+   
+volumes:
+  media:
+  dbdata:
+  static:
+  logs:
+
+secrets:
+  db_password:
+    file: ./db_password.priv
+  email_password:
+    file: ./email_password.priv
+  secret_key:
+    file: ./secret_key.priv

@@ -1,0 +1,25 @@
+version: '3.1'
+
+services:
+  term:
+    image: glud/wetty:latest
+    networks:
+      - reverse_proxy
+    environment:
+      #WETTY_USER: glud
+      #WETTY_PASSWORD: nomelase2
+      WETTY_USERS_FILE: /run/secrets/users
+      ## For reverse proxy
+      VIRTUAL_HOST: terminal.glud.org
+      LETSENCRYPT_HOST: terminal.glud.org
+      LETSENCRYPT_EMAIL: sytabaresa@gmail.com
+    secrets:
+      - users
+
+networks:
+  reverse_proxy:
+    external: true
+
+secrets:
+  users:
+    file: ./users.priv

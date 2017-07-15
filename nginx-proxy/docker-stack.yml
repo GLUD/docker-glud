@@ -1,0 +1,61 @@
+version: '3.1'
+services:
+  nginx-proxy:
+    image: jwilder/nginx-proxy:alpine
+    ports:
+      - 80:80
+      - 443:443
+    labels:
+      - "com.github.jrcs.letsencrypt_nginx_proxy_companion.nginx_proxy=true"
+    volumes:
+      - /var/run/docker.sock:/tmp/docker.sock:ro
+      - vhosts:/etc/nginx/vhost.d
+      - html:/usr/share/nginx/html
+      - server-data:/etc/nginx/conf.d
+      - certs:/etc/nginx/certs:ro #TODO: usar secrets (para entornos distribuidos)
+      - ./nginx.tmpl:/app/nginx.tmpl:ro
+    networks:
+      - reverse_proxy
+#      - proxy
+      - backend
+    #secrets:
+    #  - certs
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+        delay: 5s	
+
+  proxy-companion:
+    image: jrcs/letsencrypt-nginx-proxy-companion
+    volumes:
+      - certs:/etc/nginx/certs:rw
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - vhosts:/etc/nginx/vhost.d
+      - html:/usr/share/nginx/html
+    networks:
+     - backend
+    depends_on:
+      - nginx-proxy
+
+  whoami:
+    image: jwilder/whoami
+    environment:
+      - VIRTUAL_HOST=whoami.local
+    networks:
+      - reverse_proxy
+#      - proxy
+networks:
+#  proxy:
+  reverse_proxy:
+    external: true
+  backend:
+
+volumes:
+  vhosts:
+  html:
+  certs:
+  server-data:
+
+#secrets:
+#  certs:

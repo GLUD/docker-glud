@@ -30,4 +30,10 @@ una línea con la correspondiente contraseña.
 ## Aplicaciones actuales:
 
 - moodle (implementa una base de datos postgresql pero es configurable para mariadb)
-
+- drupal (con drush y composer)
+- ghost (en pruebas)
+- wordpress
+- nginx-proxy (ayuda a hacer el proxy reverso)
+- slud (montado en joomla)
+- wetty
+- taiga
