@@ -2,7 +2,7 @@ version: '3.1'
 
 services:
   webpage:
-    image: ghost:alpine
+    image: ghost:latest
     #command: npm --production start
     networks:
       - backend
@@ -11,7 +11,7 @@ services:
       - db
     volumes:
       - data:/var/lib/ghost
-      - ./config.js:/var/lib/ghost/config.js
+      - ./config.production.json:/var/lib/ghost/config.production.json:ro
     environment:
       VIRTUAL_HOST: blog.glud.org
       LETSENCRYPT_HOST: blog.glud.org
@@ -32,19 +32,6 @@ services:
       - MYSQL_DATABASE=ghost
     secrets:
       - db_password
-
-#  phpmyadmin:
-#    image: phpmyadmin/phpmyadmin
-#    #ports:
-#    #  - 8080:80
-#    networks:
-#      - backend
-#    depends_on:
-#      - db
-#    environment:
-#      - PMA_USER:root
-#      - PMA_HOST:db
-#      - PMA_PASSWORD_FILE:/run/secrets/db_password
 
 networks:
   backend:

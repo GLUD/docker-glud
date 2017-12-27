@@ -1,48 +1,28 @@
-version: '3.1'
+version: "3.1"
 
 services:
-  site:
-    image: joomla
-     #ports:
-     #  - 80:80
-    volumes:
-      - data:/var/www/html
+  back:
+    image: glud/slud-backend:latest
+    networks:
+      - backend
     environment:
-      - JOOMLA_DB_HOST=db
-      - JOOMLA_DB_PASSWORD_FILE=/run/secrets/db_password ## AUN NO SOPORTADO!
-      # For proxy reverse
-      - VIRTUAL_HOST=slud.glud.org
-      - LETSENCRYPT_HOST=slud.glud.org
-      - LETSENCRYPT_EMAIL=sytabaresa@gmail.com
+      API_SECRET: 123
+
+  front:
+    image: glud/slud-frontend:latest
     networks:
       - backend
       - reverse_proxy
     depends_on:
-      - db
-    secrets:
-      - db_password
-
-  db:
-    image:  mariadb
-    volumes:
-     - dbdata:/var/lib/mysql
+      - backend
     environment:
-     - MYSQL_ROOT_PASSWORD_FILE=/run/secrets/db_password
-    networks:
-      backend:
-    secrets:
-       - db_password
+      VIRTUAL_HOST: semana.glud.org
+      LETSENCRYPT_HOST: semana.glud.org
+      LETSENCRYPT_EMAIL: sytabaresa@gmail.com
 
-volumes:
-  dbdata:
-  data:
 
-secrets:
-  db_password:
-    file: ./db_password.priv
-  
 networks:
   backend:
   reverse_proxy:
     external: true
-
+        

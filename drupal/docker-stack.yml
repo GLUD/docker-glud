@@ -12,8 +12,8 @@ services:
       - keys:/var/run/keys
       - sites:/var/www/html/sites
     environment:
-      - VIRTUAL_HOST=glud.udistrital.edu.co
-      - LETSENCRYPT_HOST=glud.udistrital.edu.co
+      - VIRTUAL_HOST=drupal.glud.org
+      - LETSENCRYPT_HOST=drupal.glud.org
       - LETSENCRYPT_EMAIL=sytabaresa@gmail.com
     networks:
       - backend

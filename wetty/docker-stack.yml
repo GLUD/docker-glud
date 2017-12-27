@@ -3,6 +3,9 @@ version: '3.1'
 services:
   term:
     image: glud/wetty:latest
+    hostname: glud.org
+    volumes:
+      - glud:/home/glud/
     networks:
       - reverse_proxy
     environment:
@@ -15,6 +18,8 @@ services:
       LETSENCRYPT_EMAIL: sytabaresa@gmail.com
     secrets:
       - users
+volumes:
+  glud:
 
 networks:
   reverse_proxy:

@@ -24,11 +24,16 @@ services:
       EMAIL_PORT: 587
       EMAIL_HOST_USER: taiga@glud.org
       EMAIL_HOST_PASSWORD_FILE: /run/secrets/email_password
+      DEFAULT_FROM_EMAIL: info@taiga.glud.org
+      FRONT_SCHEME: https
+      FRONT_DOMAIN: taiga.glud.org
       POSTGRES_USER: taiga
       POSTGRES_HOST: db
       POSTGRES_DB_NAME: taiga
       POSTGRES_PORT: 5432
       POSTGRES_PASSWORD_FILE: /run/secrets/db_password
+      GITHUB_API_CLIENT_ID: f7de0ec469e65e42db28
+      GITHUB_API_CLIENT_SECRET_FILE: /run/secrets/github_secret_key
       ## For reverse proxy
       VIRTUAL_HOST: taigaback.glud.org
       LETSENCRYPT_HOST: taigaback.glud.org
@@ -45,6 +50,7 @@ services:
       - db_password 
       - email_password
       - secret_key
+      - github_secret_key
 
   taigafront:
     image: glud/taiga-front:latest
@@ -54,8 +60,10 @@ services:
       - static:/usr/local/taiga/static
       - logs:/usr/local/taiga/logs
     environment:
+      #API: taigaback.glud.org
       TAIGABACK_PORT_8000_TCP_ADDR: taigaback
       TAIGA_LANG: es
+      GITHUB_API_CLIENT_ID: f7de0ec469e65e42db28
       ## For reverse proxy
       VIRTUAL_HOST: taiga.glud.org,taiga.nsupdate.info
       LETSENCRYPT_HOST: taiga.glud.org
@@ -83,3 +91,5 @@ secrets:
     file: ./email_password.priv
   secret_key:
     file: ./secret_key.priv
+  github_secret_key:
+    file: ./github_secret_key.priv

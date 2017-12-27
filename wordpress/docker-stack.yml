@@ -1,18 +1,26 @@
 version: '3.1'
 
 services:
-  wordpress:
+  web:
     image: wordpress:latest
     #ports:
-    #  - 8080:80
+    #  - 8080:9000
     volumes:
       - data:/var/www//html
+      - themes:/var/www/html/wp-content/themes
+      - plugins:/var/www/html/wp-content/plugins
+      - uploads:/var/www/html/wp-content/uploads
     environment:
       WORDPRESS_DB_HOST: db
       WORDPRESS_DB_NAME: wordpress
       WORDPRESS_DB_PASSWORD_FILE: /run/secrets/db_password
       ## reverse proxy
-      VIRTUAL_HOST: wordpress.glud.org
+      #VIRTUAL_HOST: glud.udistrital.edu.co,glud.org,wordpress.glud.org
+      VIRTUAL_HOST: glud.org,glud.udistrital.edu.co
+      LETSENCRYPT_HOST: glud.org,glud.udistrital.edu.co
+      LETSENCRYPT_MAIL: sytabaresa@gmail.com
+      #LETSENCRYPT_HOST: glud.udistrital.edu.co,glud.org,wordpress.glud.org
+      #LETSENCRYPT_EMAIL: sytabaresa@gmail.com
     networks:
       - backend
       - reverse_proxy
@@ -38,7 +46,10 @@ networks:
 
 volumes:
   dbdata:
-  data: 
+  data:
+  themes:
+  uploads:
+  plugins:
 
 secrets:
   db_password:

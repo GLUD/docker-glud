@@ -1,0 +1,50 @@
+version: "3.1"
+
+services:
+  grafana:
+    image: grafana/grafana:latest
+    networks:
+      - reverse_proxy
+      - backend
+    volumes:
+      - data:/var/lib/grafana
+    environment:
+      GF_SERVER_ROOT_URL: http://grafana.glud.org
+      GF_SECURITY_ADMIN_PASSWORD: ry5FU8sivNnGZuebBv7Zg5hWbcNO
+      GF_USERS_ALLOW_ORG_CREATE: "true"
+
+      VIRTUAL_HOST: grafana.glud.org
+      LETSENCRYPT_HOST: grafana.glud.org
+      LETSENCRYPT_EMAIL: sytabaresa@gmail.com
+
+  influxdb:
+    command: influxd -config /etc/influxdb/influxdb.conf
+    image: influxdb:alpine
+    ports:
+      - 8086:8086
+    volumes:
+      - dbdata:/var/lib/influxdb
+#      - ./influxdb.conf:/etc/influxdb/influxdb.conf:ro
+    networks:
+      - backend
+      - reverse_proxy
+    environment:
+      INFLUXDB_HTTP_AUTH_ENABLED: "true"
+      INFLUXDB_ADMIN_USER: admin
+      INFLUXDB_ADMIN_PASSWORD: FGRcfyXB73GTgpCh
+      INFLUXDB_DB: iot
+      INFLUXDB_USER: influx
+      INFLUXDB_USER_PASSWORD: R8otSBcqK+RdYV5B
+      INFLUXDB_READ_USER: grafana
+      INFLUXDB_READ_USER_PASSWORD: Vz3ni7Wg1BSzU20p
+      VIRTUAL_HOST: sensors.glud.org
+     #LETSENCRYPT_HOST: sensors.glud.org
+     # LETSENCRYPT_EMAIL: sytabaresa@gmail.com
+networks:
+  backend:
+  reverse_proxy:
+    external: true
+
+volumes:
+  dbdata:
+  data:

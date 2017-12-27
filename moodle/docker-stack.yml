@@ -16,17 +16,17 @@ services:
     secrets:
       - db_password
     environment:  
-      - MOODLE_URL=https://cursos.glud.org
-      - DB_TYPE=pgsql #or mariadb
-      - DB_TCP_ADDR=db
-      - DB_ENV_DATABASE=moodle
-      - DB_ENV_USER=moodle
-      - DB_ENV_PASSWORD_FILE=/run/secrets/db_password
-      - SSL_ENABLED=true
+      MOODLE_URL: https://cursos.glud.org
+      DB_TYPE: pgsql #or mariadb
+      DB_TCP_ADDR: db
+      DB_ENV_DATABASE: moodle
+      DB_ENV_USER: moodle
+      DB_ENV_PASSWORD_FILE: /run/secrets/db_password
+      SSL_ENABLED: "true"
       # For reverse proxy
-      - VIRTUAL_HOST=cursos.glud.org 
-      - LETSENCRYPT_HOST=cursos.glud.org
-      - LETSENCRYPT_EMAIL=sytabaresa@gmail.com
+      VIRTUAL_HOST: cursos.glud.org 
+      LETSENCRYPT_HOST: cursos.glud.org
+      LETSENCRYPT_EMAIL: sytabaresa@gmail.com
     deploy:
       replicas: 1
       restart_policy:
@@ -57,7 +57,7 @@ services:
         
 ## PostgreSQL configuration        
   db:
-    image: postgres
+    image: postgres:9
     networks:
       - backend
     #ports:
@@ -67,9 +67,9 @@ services:
     secrets:
       - db_password
     environment:
-      - POSTGRES_PASSWORD_FILE=/run/secrets/db_password
-      - POSTGRES_USER=moodle
-      - POSTGRES_DB=moodle
+      POSTGRES_PASSWORD_FILE: /run/secrets/db_password
+      POSTGRES_USER: moodle
+      POSTGRES_DB: moodle
     deploy:
       replicas: 1
       restart_policy:

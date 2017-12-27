@@ -1,0 +1,27 @@
+version: "3"
+
+services:
+  nodered:
+    image: nodered/node-red-docker
+    volumes: 
+     - data:/data
+    networks:
+     - reverse_proxy
+    environment:
+      VIRTUAL_HOST: nodered.glud.org
+      LETSENCRYPT_HOST: nodered.glud.org
+      LETSENCRYPT_EMAIL: sytabaresa@gmail.com
+
+#      FLOW:  test.json
+#      NODE_OPTIONS: "--max_old_space_size=128"
+
+
+
+
+networks:
+  reverse_proxy:
+     external: true    
+
+volumes:
+  data:
+

@@ -37,3 +37,6 @@ una línea con la correspondiente contraseña.
 - slud (montado en joomla)
 - wetty
 - taiga
+- SLUD (pagina del slud.glud.org)
+- grafana e influxdb
+

@@ -1,0 +1,38 @@
+{
+  "url": "http://blog.glud.org/",
+  "server": {
+    "port": 2368,
+    "host": "0.0.0.0"
+  },
+  "database": {
+    "client": "mysql",
+    "connection": {
+      "host": "db",
+      "user": "root",
+      "password": "TbpgHKvaNrYZ6Bw22QHXJtnlDF18NFnWXgRfAwrM",
+      "database": "ghost"
+    }
+  },
+  "mail": {
+    "transport": "SMTP",
+    "options": {
+      "service": "Mailgun",
+      "auth": {
+        "user": "postmaster@glud.org",
+        "pass": "9888f1f4bee62c2c772fb7e385c5e95e"
+      }
+    },
+    "from": "info@glud.org"
+  },
+  "logging": {
+    "transports": [
+      "file",
+      "stdout"
+    ]
+  },
+  "process": "systemd",
+  "paths": {
+    "contentPath": "/var/lib/ghost/content"
+  }
+}
+
