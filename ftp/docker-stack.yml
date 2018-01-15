@@ -1,0 +1,26 @@
+version: "3.4"
+
+
+services:
+  pureftp:
+    image: stilliard/pure-ftpd:latest
+    #command: /run.sh -c 5 -C 5 -l puredb:/etc/pure-ftpd/pureftpd.pdb -E -j -R -p 30000:30009
+    ports:
+      - 21:21
+      - "30000-30009:30000-30009"
+    volumes:
+      - data:/etc/pure-ftpd/passwd    
+      ## EXTERNAL VOLUMES        
+      - pylatex_data:/home/ftpusers/pylatex
+      - ghost_data:/home/ftpusers/ghost/
+    environment:
+      ADDED_FLAGS: -E -c 10 -d -d
+      #PUBLICHOST: glud.udistrital.edu.co
+      PUBLICHOST: 10.40.24.96
+
+volumes:
+  data:
+  pylatex_data:
+    external: true
+  ghost_data:
+    external: true

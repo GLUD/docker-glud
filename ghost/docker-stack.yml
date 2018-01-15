@@ -2,7 +2,7 @@ version: '3.1'
 
 services:
   webpage:
-    image: ghost:latest
+    image: ghost:alpine
     #command: npm --production start
     networks:
       - backend
@@ -10,7 +10,7 @@ services:
     depends_on:
       - db
     volumes:
-      - data:/var/lib/ghost
+      - data:/var/lib/ghost/content
       - ./config.production.json:/var/lib/ghost/config.production.json:ro
     environment:
       VIRTUAL_HOST: blog.glud.org

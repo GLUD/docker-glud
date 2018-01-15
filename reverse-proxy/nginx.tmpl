@@ -1,24 +1,25 @@
 {{ $CurrentContainer := where $ "ID" .Docker.CurrentContainerID | first }}
 
 {{ define "upstream" }}
-	{{if .Address }}
+	{{ if .Address }}
 		{{/* If we got the containers from swarm and this container's port is published to host, use host IP:PORT */}}
 		{{ if and .Container.Node.ID .Address.HostPort }}
-			# {{ .Container.Node.Name }}/{{ .Container.Name }}
-                        {{/* user for docker swarm DNS load balancing: */}}
+# {{ .Container.Node.Name }}/{{ .Container.Name }}
+                        {{/* used for docker swarm DNS load balancing: */}}
 			{{ if index .Container.Labels "com.docker.swarm.service.name" }}
-	                server {{ index .Container.Labels "com.docker.swarm.service.name" }}:{{ .Address.HostPort }};
+				server {{ index .Container.Labels "com.docker.swarm.service.name" }}:{{ .Address.HostPort }};
 			{{ else }}
-                        server {{ .Container.Node.Address.IP }}:{{ .Address.HostPort }};
-			{{ end }}
+	                server {{ .Container.Node.Address.IP }}:{{ .Address.HostPort }};
+                        {{ end }}
+
 		{{/* If there is no swarm node or the port is not published on host, use container's IP:PORT */}}
 		{{ else if .Network }}
 			# {{ .Container.Name }}
                         {{/* user for docker swarm DNS load balancing: */}}
                         {{ if index .Container.Labels "com.docker.swarm.service.name" }}
-                        server {{ index .Container.Labels "com.docker.swarm.service.name" }}:{{ .Address.Port }};
+	                        server {{ index .Container.Labels "com.docker.swarm.service.name" }}:{{ .Address.Port }};
 			{{ else }}
-			server {{ .Network.IP }}:{{ .Address.Port }};
+				server {{ .Network.IP }}:{{ .Address.Port }};
 			{{ end }}
 		{{ end }}
 	{{ else if .Network }}
@@ -52,7 +53,9 @@ map $http_upgrade $proxy_connection {
 server_names_hash_bucket_size 128;
 
 # Default dhparam
+{{ if (exists "/etc/nginx/dhparam/dhparam.pem") }}
 ssl_dhparam /etc/nginx/dhparam/dhparam.pem;
+{{ end }}
 
 # Set appropriate X-Forwarded-Ssl header
 map $scheme $proxy_x_forwarded_ssl {
@@ -68,12 +71,16 @@ log_format vhost '$host $remote_addr - $remote_user [$time_local] '
 
 access_log off;
 
+{{ if $.Env.RESOLVERS }}
+resolver {{ $.Env.RESOLVERS }};
+{{ end }}
+
 {{ if (exists "/etc/nginx/proxy.conf") }}
 include /etc/nginx/proxy.conf;
 {{ else }}
 # HTTP 1.1 support
 proxy_http_version 1.1;
-proxy_buffering off;
+#proxy_buffering off;
 proxy_set_header Host $http_host;
 proxy_set_header Upgrade $http_upgrade;
 proxy_set_header Connection $proxy_connection;
@@ -85,6 +92,10 @@ proxy_set_header X-Forwarded-Port $proxy_x_forwarded_port;
 
 # Mitigate httpoxy attack (see README for details)
 proxy_set_header Proxy "";
+
+# Basic Cache Support
+proxy_cache_path /var/cache/nginx/default levels=1:2 keys_zone=default_cache:10m max_size=10g inactive=60m use_temp_path=off;
+
 {{ end }}
 
 {{ $enable_ipv6 := eq (or ($.Env.ENABLE_IPV6) "") "true" }}
@@ -128,7 +139,7 @@ upstream {{ $upstream_name }} {
 
 	{{ range $knownNetwork := $CurrentContainer.Networks }}
 		{{ range $containerNetwork := $container.Networks }}
-			{{ if or (eq $knownNetwork.Name $containerNetwork.Name) (eq $knownNetwork.Name "host") }}
+			{{ if (and (ne $containerNetwork.Name "ingress") (or (eq $knownNetwork.Name $containerNetwork.Name) (eq $knownNetwork.Name "host"))) }}
 				## Can be connect with "{{ $containerNetwork.Name }}" network
 
 				{{/* If only 1 port exposed, use that */}}
@@ -153,8 +164,24 @@ upstream {{ $upstream_name }} {
 {{/* Get the VIRTUAL_PROTO defined by containers w/ the same vhost, falling back to "http" */}}
 {{ $proto := trim (or (first (groupByKeys $containers "Env.VIRTUAL_PROTO")) "http") }}
 
+{{/* Get the NETWORK_ACCESS defined by containers w/ the same vhost, falling back to "external" */}}
+{{ $network_tag := or (first (groupByKeys $containers "Env.NETWORK_ACCESS")) "external" }}
+
+{{/* Get the NETWORK_ACCESS defined by containers w/ the same vhost, falling back to "external" */}}
+{{ $network_tag := or (first (groupByKeys $containers "Env.NETWORK_ACCESS")) "external" }}
+
 {{/* Get the HTTPS_METHOD defined by containers w/ the same vhost, falling back to "redirect" */}}
 {{ $https_method := or (first (groupByKeys $containers "Env.HTTPS_METHOD")) "redirect" }}
+
+{{/* Get the SSL_POLICY defined by containers w/ the same vhost, falling back to "Mozilla-Intermediate" */}}
+{{ $ssl_policy := or (first (groupByKeys $containers "Env.SSL_POLICY")) "Mozilla-Intermediate" }}
+
+{{/* Get the HSTS defined by containers w/ the same vhost, falling back to "max-age=31536000" */}}
+{{ $hsts := or (first (groupByKeys $containers "Env.HSTS")) "max-age=31536000" }}
+
+{{/* Get the VIRTUAL_ROOT By containers w/ use fastcgi root */}}
+{{ $vhost_root := or (first (groupByKeys $containers "Env.VIRTUAL_ROOT")) "/var/www/public" }}
+
 
 {{/* Get the first cert name defined by containers w/ the same vhost */}}
 {{ $certName := (first (groupByKeys $containers "Env.CERT_NAME")) }}
@@ -193,8 +220,39 @@ server {
 	{{ end }}
 	access_log /var/log/nginx/access.log vhost;
 
+	{{ if eq $network_tag "internal" }}
+	# Only allow traffic from internal clients
+	include /etc/nginx/network_internal.conf;
+	{{ end }}
+
+	{{ if eq $ssl_policy "Mozilla-Modern" }}
+	ssl_protocols TLSv1.2;
+	ssl_ciphers 'ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-SHA384:ECDHE-RSA-AES256-SHA384:ECDHE-ECDSA-AES128-SHA256:ECDHE-RSA-AES128-SHA256';
+	{{ else if eq $ssl_policy "Mozilla-Intermediate" }}
 	ssl_protocols TLSv1 TLSv1.1 TLSv1.2;
 	ssl_ciphers 'ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-AES128-SHA256:ECDHE-RSA-AES128-SHA256:ECDHE-ECDSA-AES128-SHA:ECDHE-RSA-AES256-SHA384:ECDHE-RSA-AES128-SHA:ECDHE-ECDSA-AES256-SHA384:ECDHE-ECDSA-AES256-SHA:ECDHE-RSA-AES256-SHA:DHE-RSA-AES128-SHA256:DHE-RSA-AES128-SHA:DHE-RSA-AES256-SHA256:DHE-RSA-AES256-SHA:AES128-GCM-SHA256:AES256-GCM-SHA384:AES128-SHA256:AES256-SHA256:AES128-SHA:AES256-SHA:!DSS';
+	{{ else if eq $ssl_policy "Mozilla-Old" }}
+	ssl_protocols SSLv3 TLSv1 TLSv1.1 TLSv1.2;
+	ssl_ciphers 'ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-AES256-GCM-SHA384:DHE-RSA-AES128-GCM-SHA256:DHE-DSS-AES128-GCM-SHA256:kEDH+AESGCM:ECDHE-RSA-AES128-SHA256:ECDHE-ECDSA-AES128-SHA256:ECDHE-RSA-AES128-SHA:ECDHE-ECDSA-AES128-SHA:ECDHE-RSA-AES256-SHA384:ECDHE-ECDSA-AES256-SHA384:ECDHE-RSA-AES256-SHA:ECDHE-ECDSA-AES256-SHA:DHE-RSA-AES128-SHA256:DHE-RSA-AES128-SHA:DHE-DSS-AES128-SHA256:DHE-RSA-AES256-SHA256:DHE-DSS-AES256-SHA:DHE-RSA-AES256-SHA:ECDHE-RSA-DES-CBC3-SHA:ECDHE-ECDSA-DES-CBC3-SHA:EDH-RSA-DES-CBC3-SHA:AES128-GCM-SHA256:AES256-GCM-SHA384:AES128-SHA256:AES256-SHA256:AES128-SHA:AES256-SHA:AES:DES-CBC3-SHA:HIGH:SEED:!aNULL:!eNULL:!EXPORT:!DES:!RC4:!MD5:!PSK:!RSAPSK:!aDH:!aECDH:!EDH-DSS-DES-CBC3-SHA:!KRB5-DES-CBC3-SHA:!SRP';
+	{{ else if eq $ssl_policy "AWS-TLS-1-2-2017-01" }}
+	ssl_protocols TLSv1.2;
+	ssl_ciphers 'ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES128-SHA256:ECDHE-RSA-AES128-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-AES256-SHA384:ECDHE-RSA-AES256-SHA384:AES128-GCM-SHA256:AES128-SHA256:AES256-GCM-SHA384:AES256-SHA256';
+	{{ else if eq $ssl_policy "AWS-TLS-1-1-2017-01" }}
+	ssl_protocols TLSv1.1 TLSv1.2;
+	ssl_ciphers 'ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES128-SHA256:ECDHE-RSA-AES128-SHA256:ECDHE-ECDSA-AES128-SHA:ECDHE-RSA-AES128-SHA:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-AES256-SHA384:ECDHE-RSA-AES256-SHA384:ECDHE-RSA-AES256-SHA:ECDHE-ECDSA-AES256-SHA:AES128-GCM-SHA256:AES128-SHA256:AES128-SHA:AES256-GCM-SHA384:AES256-SHA256:AES256-SHA';
+	{{ else if eq $ssl_policy "AWS-2016-08" }}
+	ssl_protocols TLSv1 TLSv1.1 TLSv1.2;
+	ssl_ciphers 'ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES128-SHA256:ECDHE-RSA-AES128-SHA256:ECDHE-ECDSA-AES128-SHA:ECDHE-RSA-AES128-SHA:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-AES256-SHA384:ECDHE-RSA-AES256-SHA384:ECDHE-RSA-AES256-SHA:ECDHE-ECDSA-AES256-SHA:AES128-GCM-SHA256:AES128-SHA256:AES128-SHA:AES256-GCM-SHA384:AES256-SHA256:AES256-SHA';
+	{{ else if eq $ssl_policy "AWS-2015-05" }}
+	ssl_protocols TLSv1 TLSv1.1 TLSv1.2;
+	ssl_ciphers 'ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES128-SHA256:ECDHE-RSA-AES128-SHA256:ECDHE-ECDSA-AES128-SHA:ECDHE-RSA-AES128-SHA:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-AES256-SHA384:ECDHE-RSA-AES256-SHA384:ECDHE-RSA-AES256-SHA:ECDHE-ECDSA-AES256-SHA:AES128-GCM-SHA256:AES128-SHA256:AES128-SHA:AES256-GCM-SHA384:AES256-SHA256:AES256-SHA:DES-CBC3-SHA';
+	{{ else if eq $ssl_policy "AWS-2015-03" }}
+	ssl_protocols TLSv1 TLSv1.1 TLSv1.2;
+	ssl_ciphers 'ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES128-SHA256:ECDHE-RSA-AES128-SHA256:ECDHE-ECDSA-AES128-SHA:ECDHE-RSA-AES128-SHA:DHE-RSA-AES128-SHA:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-AES256-SHA384:ECDHE-RSA-AES256-SHA384:ECDHE-RSA-AES256-SHA:ECDHE-ECDSA-AES256-SHA:AES128-GCM-SHA256:AES128-SHA256:AES128-SHA:AES256-GCM-SHA384:AES256-SHA256:AES256-SHA:DHE-DSS-AES128-SHA:DES-CBC3-SHA';
+	{{ else if eq $ssl_policy "AWS-2015-02" }}
+	ssl_protocols TLSv1 TLSv1.1 TLSv1.2;
+	ssl_ciphers 'ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES128-SHA256:ECDHE-RSA-AES128-SHA256:ECDHE-ECDSA-AES128-SHA:ECDHE-RSA-AES128-SHA:DHE-RSA-AES128-SHA:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-AES256-SHA384:ECDHE-RSA-AES256-SHA384:ECDHE-RSA-AES256-SHA:ECDHE-ECDSA-AES256-SHA:AES128-GCM-SHA256:AES128-SHA256:AES128-SHA:AES256-GCM-SHA384:AES256-SHA256:AES256-SHA:DHE-DSS-AES128-SHA';
+	{{ end }}
 
 	ssl_prefer_server_ciphers on;
 	ssl_session_timeout 5m;
@@ -208,8 +266,14 @@ server {
 	ssl_dhparam {{ printf "/etc/nginx/certs/%s.dhparam.pem" $cert }};
 	{{ end }}
 
-	{{ if (ne $https_method "noredirect") }}
-	add_header Strict-Transport-Security "max-age=31536000";
+	{{ if (exists (printf "/etc/nginx/certs/%s.chain.crt" $cert)) }}
+	ssl_stapling on;
+	ssl_stapling_verify on;
+	ssl_trusted_certificate {{ printf "/etc/nginx/certs/%s.chain.crt" $cert }};
+	{{ end }}
+
+	{{ if (and (ne $https_method "noredirect") (ne $hsts "off")) }}
+	add_header Strict-Transport-Security "{{ trim $hsts }}";
 	{{ end }}
 
 	{{ if (exists (printf "/etc/nginx/vhost.d/%s" $host)) }}
@@ -219,9 +283,19 @@ server {
 	{{ end }}
 
 	location / {
+		# Basic Cache Support
+		proxy_cache default_cache;
+		proxy_cache_revalidate on;
+		proxy_cache_bypass  $http_cache_control;
+		#add_header X-Proxy-Cache $upstream_cache_status; # Only for debbuging
+
 		{{ if eq $proto "uwsgi" }}
 		include uwsgi_params;
 		uwsgi_pass {{ trim $proto }}://{{ trim $upstream_name }};
+		{{ else if eq $proto "fastcgi" }}
+		root   {{ trim $vhost_root }};
+		include fastcgi.conf;
+		fastcgi_pass {{ trim $upstream_name }};
 		{{ else }}
 		proxy_pass {{ trim $proto }}://{{ trim $upstream_name }};
 		{{ end }}
@@ -230,11 +304,11 @@ server {
 		auth_basic	"Restricted {{ $host }}";
 		auth_basic_user_file	{{ (printf "/etc/nginx/htpasswd/%s" $host) }};
 		{{ end }}
-                {{ if (exists (printf "/etc/nginx/vhost.d/%s_location" $host)) }}
-                include {{ printf "/etc/nginx/vhost.d/%s_location" $host}};
-                {{ else if (exists "/etc/nginx/vhost.d/default_location") }}
-                include /etc/nginx/vhost.d/default_location;
-                {{ end }}
+		{{ if (exists (printf "/etc/nginx/vhost.d/%s_location" $host)) }}
+		include {{ printf "/etc/nginx/vhost.d/%s_location" $host}};
+		{{ else if (exists "/etc/nginx/vhost.d/default_location") }}
+		include /etc/nginx/vhost.d/default_location;
+		{{ end }}
 	}
 }
 
@@ -250,6 +324,11 @@ server {
 	{{ end }}
 	access_log /var/log/nginx/access.log vhost;
 
+	{{ if eq $network_tag "internal" }}
+	# Only allow traffic from internal clients
+	include /etc/nginx/network_internal.conf;
+	{{ end }}
+
 	{{ if (exists (printf "/etc/nginx/vhost.d/%s" $host)) }}
 	include {{ printf "/etc/nginx/vhost.d/%s" $host }};
 	{{ else if (exists "/etc/nginx/vhost.d/default") }}
@@ -257,9 +336,19 @@ server {
 	{{ end }}
 
 	location / {
+		# Basic Cache Support
+		proxy_cache default_cache;
+		proxy_cache_revalidate on;
+		proxy_cache_bypass  $http_cache_control;
+		#add_header X-Proxy-Cache $upstream_cache_status; # Only for debbuging
+
 		{{ if eq $proto "uwsgi" }}
 		include uwsgi_params;
 		uwsgi_pass {{ trim $proto }}://{{ trim $upstream_name }};
+		{{ else if eq $proto "fastcgi" }}
+		root   {{ trim $vhost_root }};
+		include fastcgi.conf;
+		fastcgi_pass {{ trim $upstream_name }};
 		{{ else }}
 		proxy_pass {{ trim $proto }}://{{ trim $upstream_name }};
 		{{ end }}
@@ -267,11 +356,11 @@ server {
 		auth_basic	"Restricted {{ $host }}";
 		auth_basic_user_file	{{ (printf "/etc/nginx/htpasswd/%s" $host) }};
 		{{ end }}
-                {{ if (exists (printf "/etc/nginx/vhost.d/%s_location" $host)) }}
-                include {{ printf "/etc/nginx/vhost.d/%s_location" $host}};
-                {{ else if (exists "/etc/nginx/vhost.d/default_location") }}
-                include /etc/nginx/vhost.d/default_location;
-                {{ end }}
+		{{ if (exists (printf "/etc/nginx/vhost.d/%s_location" $host)) }}
+		include {{ printf "/etc/nginx/vhost.d/%s_location" $host}};
+		{{ else if (exists "/etc/nginx/vhost.d/default_location") }}
+		include /etc/nginx/vhost.d/default_location;
+		{{ end }}
 	}
 }
 

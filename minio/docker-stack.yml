@@ -1,0 +1,53 @@
+version: '3.4'
+
+services:
+  minio1:
+    image: minio/minio
+    volumes:
+      - minio1-data:/export
+    ports:
+      - "8091:9000"
+    networks:
+      - minio_distributed
+    deploy:
+      restart_policy:
+        delay: 10s
+        max_attempts: 10
+        window: 60s
+    command: server http://minio1/export http://minio2/export http://minio3/export http://minio4/export
+    secrets:
+      - secret_key
+      - access_key
+
+  minio2:
+    image: minio/minio
+    volumes:
+      - minio2-data:/export
+    ports:
+      - "8092:9000"
+    networks:
+      - minio_distributed
+    deploy:
+      restart_policy:
+        delay: 10s
+        max_attempts: 10
+        window: 60s
+    command: server http://minio1/export http://minio2/export http://minio3/export http://minio4/export
+    secrets:
+      - secret_key
+      - access_key
+
+
+volumes:
+  minio1-data:
+  minio2-data:
+
+networks:
+  minio_distributed:
+    driver: overlay
+
+secrets:
+  secret_key:
+    external: true
+  access_key:
+    external: true
