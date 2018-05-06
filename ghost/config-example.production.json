@@ -9,7 +9,7 @@
     "connection": {
       "host": "db",
       "user": "root",
-      "password": "TbpgHKvaNrYZ6Bw22QHXJtnlDF18NFnWXgRfAwrM",
+      "password": "MARIADB_PASSWORD",
       "database": "ghost"
     }
   },
@@ -18,8 +18,8 @@
     "options": {
       "service": "Mailgun",
       "auth": {
-        "user": "postmaster@glud.org",
-        "pass": "9888f1f4bee62c2c772fb7e385c5e95e"
+        "user": "ghost@glud.org",
+        "pass": "MAILGUN_SMTP_GHOST_PASSWORD"
       }
     },
     "from": "info@glud.org"

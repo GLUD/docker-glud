@@ -11,7 +11,7 @@ services:
       - 443:443
     volumes:
       - server-data:/etc/nginx/conf.d:ro
-      - certs:/etc/nginx/certs:ro #TODO: usar secrets (para entornos distribuidos)i
+      - certs:/etc/nginx/certs:ro #TODO: usar secrets (para entornos distribuidos)
       - vhosts:/etc/nginx/vhost.d:ro
       - html:/usr/share/nginx/html:ro
       - cache:/var/cache/nginx/default
@@ -25,6 +25,8 @@ services:
       restart_policy:
         condition: any
         delay: 5s
+      placement:
+        constraints: [node.hostname == glud.udistrital.edu.co]
 
 
   dockergen:
@@ -49,6 +51,8 @@ services:
       restart_policy:
         condition: any
         delay: 5s
+      placement:
+        constraints: [node.role == manager]
 
   proxy-companion:
     image: jrcs/letsencrypt-nginx-proxy-companion
@@ -67,7 +71,8 @@ services:
       restart_policy:
         condition: any
         delay: 5s       
-
+      placement:
+        constraints: [node.role == manager]
 
 #  whoami:
 #    image: jwilder/whoami

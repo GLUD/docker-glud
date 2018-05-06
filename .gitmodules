@@ -1,0 +1,9 @@
+[submodule "wetty/wetty"]
+	path = wetty/wetty
+	url = https://github.com/GLUD/wetty
+[submodule "slud/SLUD-backend"]
+	path = slud/SLUD-backend
+	url = https://github.com/GLUD/SLUD-backend
+[submodule "slud/SLUD-frontend"]
+	path = slud/SLUD-frontend
+	url = https://github.com/GLUD/SLUD-frontend

@@ -5,8 +5,27 @@ services:
     image: glud/slud-backend:latest
     networks:
       - backend
+      - reverse_proxy
     environment:
-      API_SECRET: 123
+      SECRET_KEY_FILE: "./secret_key"
+      ADMIN_USER: root
+      ADMIN_EMAIL: "sytabaresa@gmail.com"
+      ADMIN_PASSWORD_FILE: "./admin_key"
+      PUBLIC_HOST: sludapi.glud.org
+      VIRTUAL_HOST: sludapi.glud.org
+      LETSENCRYPT_HOST: sludapi.glud.org
+      LETSENCRYPT_EMAIL: sytabaresa@gmail.com
+    volumes:
+      - ./django.priv:/usr/src/app/secret_key
+      - ./admin.priv:/usr/src/app/admin_key
+      - data:/usr/src/app/data
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+      placement:
+        constraints: [node.hostname == glud.udistrital.edu.co]
 
   front:
     image: glud/slud-frontend:latest
@@ -16,10 +35,19 @@ services:
     depends_on:
       - backend
     environment:
-      VIRTUAL_HOST: semana.glud.org
-      LETSENCRYPT_HOST: semana.glud.org
+      VIRTUAL_HOST: semana.glud.org,slud.glud.org
+      LETSENCRYPT_HOST: semana.glud.org,slud.glud.org
       LETSENCRYPT_EMAIL: sytabaresa@gmail.com
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+      placement:
+        constraints: [node.hostname == glud.udistrital.edu.co]
 
+volumes:
+  data:
 
 networks:
   backend:

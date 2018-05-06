@@ -11,16 +11,22 @@ services:
       - db
     volumes:
       - data:/var/lib/ghost/content
-      - ./config.production.json:/var/lib/ghost/config.production.json:ro
+      - ./config-private.production.json:/var/lib/ghost/config.production.json:ro
     environment:
+      NODE_ENV:
       VIRTUAL_HOST: blog.glud.org
       LETSENCRYPT_HOST: blog.glud.org
       LETSENCRYPT_EMAIL: sytabaresa@gmail.com
     secrets:
       - db_password
     deploy:
+      replicas: 1
       restart_policy:
         condition: any
+        delay: 5s       
+      placement:
+        constraints: [node.hostname == glud.udistrital.edu.co]
+
   db:
     image: mariadb
     networks:
@@ -32,6 +38,14 @@ services:
       - MYSQL_DATABASE=ghost
     secrets:
       - db_password
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: any
+        delay: 5s       
+      placement:
+        constraints: [node.hostname == glud.udistrital.edu.co]
+
 
 networks:
   backend:

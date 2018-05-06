@@ -1,0 +1,22 @@
+version: "3.4"
+
+services:
+  qr:
+    image: samwierema/go-qr-generator
+    networks:
+      - reverse_proxy
+    environment:
+      VIRTUAL_HOST: qr.glud.org
+      LETSENCRYPT_HOST: qr.glud.org
+      LETSENCRYPT_EMAIL: sytabaresa@gmail.com
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+      placement:
+        constraints: [node.hostname == glud.udistrital.edu.co]
+
+networks:
+  reverse_proxy:
+    external: true

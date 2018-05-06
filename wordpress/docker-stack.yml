@@ -16,8 +16,8 @@ services:
       WORDPRESS_DB_PASSWORD_FILE: /run/secrets/db_password
       ## reverse proxy
       #VIRTUAL_HOST: glud.udistrital.edu.co,glud.org,wordpress.glud.org
-      VIRTUAL_HOST: glud.org,glud.udistrital.edu.co
-      LETSENCRYPT_HOST: glud.org,glud.udistrital.edu.co
+      VIRTUAL_HOST: glud.org,glud.udistrital.edu.co,www.glud.org
+      LETSENCRYPT_HOST: glud.org,glud.udistrital.edu.co,www.glud.org
       LETSENCRYPT_MAIL: sytabaresa@gmail.com
       #LETSENCRYPT_HOST: glud.udistrital.edu.co,glud.org,wordpress.glud.org
       #LETSENCRYPT_EMAIL: sytabaresa@gmail.com
@@ -26,6 +26,13 @@ services:
       - reverse_proxy
     secrets:
       - db_password
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+      placement:
+        constraints: [node.hostname == glud.udistrital.edu.co]
 
   db:
     image: mariadb
@@ -38,6 +45,13 @@ services:
       - backend
     secrets:
       - db_password
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+      placement:
+        constraints: [node.hostname == glud.udistrital.edu.co]
 
 networks:
   backend:

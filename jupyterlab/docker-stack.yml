@@ -1,0 +1,22 @@
+version: "3.1"
+services:
+  web:
+    image: glud/jupyterlab:latest
+    networks:
+  #    - backend
+      - reverse_proxy
+    environment:
+      VIRTUAL_HOST: jupyter.glud.org
+      LETSENCRYPT_HOST: jupyter.glud.org
+    volumes:
+      - data:/opt/app/data
+    deploy:
+      placement:
+        constraints: [node.hostname == glud.udistrital.edu.co]
+
+networks:
+  reverse_proxy:
+    external: true
+
+volumes:
+  data:  

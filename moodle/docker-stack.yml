@@ -32,6 +32,8 @@ services:
       restart_policy:
         condition: on-failure
         delay: 5s
+      placement:
+        constraints: [node.hostname == glud.udistrital.edu.co]
 
 ## MariaDB configuration:
 #  db:
@@ -75,6 +77,8 @@ services:
       restart_policy:
         condition: on-failure
         delay: 5s
+      placement:
+        constraints: [node.hostname == glud.udistrital.edu.co]
 
 #  adminer:
 #    image: adminer

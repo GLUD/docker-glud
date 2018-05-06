@@ -1,0 +1,45 @@
+version: "3.4"
+
+
+services:
+  influxdb:
+    command: influxd -config /etc/influxdb/influxdb.conf
+    image: influxdb:alpine
+    ports:
+      - 8086:8086
+    volumes:
+      - dbdata:/var/lib/influxdb
+#      - ./influxdb.conf:/etc/influxdb/influxdb.conf:ro
+    networks:
+      - backend
+      - intralora
+      - reverse_proxy
+    env_file:
+      - ./influxdb.env.priv
+    environment:
+      INFLUXDB_HTTP_AUTH_ENABLED: "true"
+      INFLUXDB_ADMIN_USER: admin
+      INFLUXDB_DB: iot
+      INFLUXDB_USER: influx
+      INFLUXDB_READ_USER: grafana
+      VIRTUAL_HOST: sensors.glud.org
+     #LETSENCRYPT_HOST: sensors.glud.org
+     # LETSENCRYPT_EMAIL: sytabaresa@gmail.com
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: any
+        delay: 5s
+      placement:
+        constraints: [node.hostname == glud.udistrital.edu.co]
+
+networks:
+  backend:
+  intralora:
+    external: true
+  reverse_proxy:
+    external: true
+  metrics:
+    external: true
+volumes:
+  dbdata:

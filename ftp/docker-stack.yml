@@ -11,16 +11,19 @@ services:
     volumes:
       - data:/etc/pure-ftpd/passwd    
       ## EXTERNAL VOLUMES        
-      - pylatex_data:/home/ftpusers/pylatex
       - ghost_data:/home/ftpusers/ghost/
+      - repos_repos:/home/ftpusers/repos/
     environment:
       ADDED_FLAGS: -E -c 10 -d -d
       #PUBLICHOST: glud.udistrital.edu.co
       PUBLICHOST: 10.40.24.96
+    deploy:
+      placement:
+        constraints: [node.role == manager]
 
 volumes:
   data:
-  pylatex_data:
-    external: true
   ghost_data:
+    external: true
+  repos_repos:
     external: true

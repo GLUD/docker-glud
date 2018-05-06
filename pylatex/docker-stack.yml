@@ -7,11 +7,15 @@ services:
      #  - 80:80
     volumes:
       - data:/var/www/html
+    env_file:
+      # JOOMLA_DB_PASSWORD
+      - joomla.env.priv
     environment:
       - JOOMLA_DB_HOST=db
       #- JOOMLA_DB_PASSWORD_FILE=/run/secrets/db_password ## AUN NO SOPORTADO!
       # For proxy reverse
       - VIRTUAL_HOST=pylatex.glud.org
+      #- HTTPS_METHOD=noredirect
       - LETSENCRYPT_HOST=pylatex.glud.org
       - LETSENCRYPT_EMAIL=sytabaresa@gmail.com
     networks:
@@ -21,6 +25,13 @@ services:
       - db
     secrets:
       - db_password
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+      placement:
+        constraints: [node.hostname == glud.udistrital.edu.co]
 
   db:
     image:  mariadb
@@ -32,6 +43,13 @@ services:
       backend:
     secrets:
        - db_password
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+      placement:
+        constraints: [node.hostname == glud.udistrital.edu.co]
 
 volumes:
   dbdata:

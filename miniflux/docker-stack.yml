@@ -1,0 +1,38 @@
+version: '3.4'
+services:
+  miniflux:
+    image: miniflux/miniflux:2.0.1
+    #ports:
+    #  - "80:8080"
+    networks:
+      - backend
+      - reverse_proxy
+    env_file:
+      # DATABASE_URL
+      - ./miniflux.env.priv
+    environment:  
+      VIRTUAL_HOST: rss.glud.org
+      LETSENCRYPT_HOST: rss.glud.org
+  db:
+    image: postgres:10.1
+    networks:
+      - backend
+    volumes:
+      - dbdata:/var/lib/postgresql/data
+    environment:
+      POSTGRES_USER: miniflux
+      POSTGRES_PASSWORD_FILE: /run/secrets/db_password
+   secrets:
+      - db_password
+
+volumes:
+  dbdata:
+
+networks:
+  backend:
+  reverse_proxy:
+    external: true
+
+secrets:
+  db_password:
+    file: ./db_password.priv

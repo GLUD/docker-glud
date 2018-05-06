@@ -1,0 +1,20 @@
+FROM  python:alpine3.7
+
+WORKDIR /opt/app/data
+
+RUN apk add --no-cache lapack openblas make cmake g++ gfortran libpng-dev freetype-dev libxml2-dev libxslt-dev
+
+RUN pip install jupyterlab
+RUN jupyter serverextension enable --py jupyterlab --sys-prefix
+
+RUN pip install ahkab numpy scipy sympy slycot control cite2c pandas matplotlib
+
+RUN adduser jupyterlab -Dh /opt/app/data && chown -R jupyterlab: /opt/app/data
+
+ENV pandoc_version 2.1.1
+
+RUN curl -L https://github.com/jgm/pandoc/releases/download/${pandoc_version}/pandoc-${pandoc_version}-linux.tar.gz | \
+tar xzv && mv pandoc-${pandoc_version}/bin/* /usr/local/bin/ && rm -r  pandoc-${pandoc_version}
+
+USER jupyterlab
+
